@@ -795,14 +795,55 @@ def stage_build():
     body = tpl.replace("/*__DATA__*/", data_js)
     (DIST / "artifact.html").write_text(
         "<title>Свои люди — граф русской элиты 1800–2026</title>\n" + body)  # body-only: Artifact сам оборачивает
-    full = ('<!doctype html><html lang="ru"><head><meta charset="utf-8">'
-            '<meta name="viewport" content="width=device-width, initial-scale=1">'
-            "<title>Свои люди — граф русской элиты 1800–2026</title></head><body>"
-            + body + "</body></html>")
-    (DIST / "index.html").write_text(full)
+    def wrap(b):
+        return ('<!doctype html><html lang="ru"><head><meta charset="utf-8">'
+                '<meta name="viewport" content="width=device-width, initial-scale=1">'
+                "<title>Свои люди — граф русской элиты 1800–2026</title></head><body>"
+                + b + "</body></html>")
+    (DIST / "index.html").write_text(wrap(body))
     if (ROOT / "docs").is_dir():  # копия для GitHub Pages
-        (ROOT / "docs" / "index.html").write_text(full)
+        (ROOT / "docs" / "index.html").write_text(wrap(body))
     print(f"dist/index.html: узлов {len(nodes)}, рёбер {len(links)}")
+
+    # ---- личный слой: подмешивается ТОЛЬКО в dist/index.html ----
+    # publичные файлы (docs/, artifact.html, graph.json) выше уже записаны без него
+    pf = ROOT / "personal.json"
+    if pf.exists():
+        pers = json.loads(pf.read_text())
+        for p in pers.get("persons", []):
+            pid = "P:" + p["name"]
+            ax_p = min(max((p.get("birth") or 1985) + 25, 1780), 2026)
+            graph["nodes"].append({
+                "id": pid, "label": p["name"], "type": "person",
+                "birth": p.get("birth"), "death": None, "sphere": p.get("sphere", "прочее"),
+                "desc": ((p.get("desc") or "") + " · личный слой, без публичных источников").strip(" ·"),
+                "extract": p.get("about", ""), "img": None,
+                "url": p.get("url") or "https://github.com/haskiindahouse/svoi-lyudi",
+                "community": 0, "btw": 0, "deg": 0, "lrank": 0,
+                "x1": round((ax_p - 1780) / 246, 4), "y1": 0.55, "x2": 0.5, "y2": 0.06})
+        lab2id = {}
+        for n in graph["nodes"]:
+            k = norm_key(n["label"])
+            lab2id.setdefault(k, n["id"])
+            parts = k.split()
+            if len(parts) >= 3:
+                lab2id.setdefault(parts[0] + " " + parts[-1], n["id"])
+        for e in pers.get("edges", []):
+            a, b = lab2id.get(norm_key(e["a"])), lab2id.get(norm_key(e["b"]))
+            if a and b:
+                graph["links"].append({"s": a, "t": b, "type": e.get("type", "friend"),
+                                       "from": e.get("from"), "to": e.get("to"), "src": e.get("src")})
+            else:
+                print("  personal НЕ НАЙДЕНО:", e["a"], "--", e["b"])
+        dcnt = collections.Counter()
+        for l in graph["links"]:
+            dcnt[l["s"]] += 1; dcnt[l["t"]] += 1
+        for n in graph["nodes"]:
+            n["deg"] = dcnt[n["id"]]
+        body_p = tpl.replace("/*__DATA__*/",
+                             "window.GRAPH=" + json.dumps(graph, ensure_ascii=False).replace("</", "<\\/") + ";")
+        (DIST / "index.html").write_text(wrap(body_p))
+        print(f"личный слой: {len(pers.get('persons', []))} чел., {len(pers.get('edges', []))} рёбер → только dist/index.html")
     # ponytail: проверка-минимум — граф не пустой и главная цепочка на месте
     labs = {n["label"] for n in nodes.values()}
     for need in ("Владимир Путин", "Никита Михалков", "Василий Суриков"):
