@@ -891,7 +891,10 @@
     // летим на bounding box видимых узлов: в хронологии человек стоит по рождению,
     // а не по годам эпохи — полоса поздних эпох сама по себе почти пуста
     let x1 = Infinity, x2 = -Infinity;
-    for (const n of nodes) if (nodeOn(n)) { const x = wx(n); if (x < x1) x1 = x; if (x > x2) x2 = x; }
+    for (const n of nodes) {
+      if (n.type === "institution" || !nodeOn(n)) continue;  // вузы-долгожители не растягивают кадр
+      const x = wx(n); if (x < x1) x1 = x; if (x > x2) x2 = x;
+    }
     if (!(x2 > x1)) { flyTo(1, 0, 0, 400); return; }
     const k = Math.max(0.9, Math.min(0.9 * W / (x2 - x1), 1.35 * H / (H - TOP - BOT)));
     flyTo(k, W / 2 - (x1 + x2) / 2 * k, H / 2 - (TOP + 0.5 * (H - TOP - BOT)) * k, 550);
