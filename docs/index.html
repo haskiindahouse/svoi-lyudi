@@ -157,7 +157,19 @@
     transition: border-color .15s, background .15s, transform .1s; }
   #playBtn:hover { border-color: var(--accent); color: var(--accent); }
   #playBtn:active { transform: scale(.92); }
-  #year { flex: 1; -webkit-appearance: none; appearance: none; height: 26px; background: none; cursor: pointer; }
+  .sliderwrap { position: relative; flex: 1; display: flex; align-items: center; }
+  .sliderwrap::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% + 8px);
+    height: 4px; pointer-events: none; opacity: .7;
+    background-image: linear-gradient(to right, var(--grid) 1px, transparent 1px);
+    background-size: calc(100% / 22) 100%; }
+  .win { display: flex; gap: 3px; }
+  .win button { height: 22px; padding: 0 8px; border: 1px solid var(--grid); border-radius: 999px;
+    background: var(--surface); color: var(--muted); font: 10px var(--mono); letter-spacing: .04em;
+    cursor: pointer; transition: background .14s, color .14s, border-color .14s; }
+  .win button:hover { border-color: var(--accent); color: var(--ink); }
+  .win button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent);
+    color: #fff; font-weight: 700; }
+  #year { width: 100%; -webkit-appearance: none; appearance: none; height: 26px; background: none; cursor: pointer; }
   #year::-webkit-slider-runnable-track { height: 3px; border-radius: 2px;
     background: linear-gradient(to right, var(--accent) var(--fill, 100%), var(--grid) var(--fill, 100%)); }
   #year::-webkit-slider-thumb { -webkit-appearance: none; width: 15px; height: 15px; margin-top: -6px;
@@ -236,7 +248,8 @@
     animation: fadeIn .8s 1s backwards; }
   #help a { color: var(--muted); text-decoration: none; border-bottom: 1px dotted var(--muted); }
   #help a:hover { color: var(--accent); border-color: var(--accent); }
-  @media (max-width: 700px) { .brand small, #help { display: none; } #legend { display: none; } }
+  @media (max-width: 700px) { .brand small, #help { display: none; } #legend { display: none; }
+    .timebar { flex-wrap: wrap; } .sliderwrap { flex: 1 1 100%; order: 9; } }
   @media (prefers-reduced-motion: reduce) {
     #app *, #card, #card li, .bar, .timebar, #epochBar, #legend, #epanel { transition: none !important; animation: none !important; }
   }
@@ -261,7 +274,10 @@
   <footer class="timebar">
     <button id="playBtn" aria-label="Проиграть время">▶</button>
     <span id="yearLabel">1800–2020</span>
-    <input type="range" id="year" min="1800" max="2020" value="2020" step="1" aria-label="Год">
+    <div class="sliderwrap"><input type="range" id="year" min="1800" max="2020" value="2020" step="1" aria-label="Год"></div>
+    <div class="win" id="winBox" role="group" aria-label="Ширина окна времени">
+      <button data-w="1">год</button><button data-w="5" aria-pressed="true">5 лет</button><button data-w="10">10 лет</button>
+    </div>
     <label><input type="checkbox" id="allYears" checked> весь период</label>
   </footer>
   <aside id="card" aria-live="polite"></aside>
@@ -798,15 +814,31 @@ window.GRAPH={"meta": {"built": "pipeline", "nodes": 2473, "links": 6491, "lanes
   function syncSlider() {
     yearInput.style.setProperty("--fill", ((st.year - 1800) / 220 * 100) + "%");
   }
+  st.win = 5;  // ширина окна времени в годах
+  function applyYearWindow() {
+    const w = st.win;
+    const a = Math.max(1800, Math.round(st.year - (w - 1) / 2));
+    const b = Math.min(2020, a + w - 1);
+    st.range = [a, b];
+    yearLabel.textContent = w === 1 ? String(Math.round(st.year)) : a + "–" + b;
+  }
   yearInput.addEventListener("input", () => {
-    st.year = +yearInput.value; yearLabel.textContent = yearInput.value;
-    st.range = [st.year, st.year]; allYears.checked = false;
+    st.year = +yearInput.value; allYears.checked = false;
+    applyYearWindow();
     setEpoch(null, true); syncSlider(); draw();
   });
   allYears.addEventListener("change", () => {
-    st.range = allYears.checked ? null : [st.year, st.year];
-    if (allYears.checked) yearLabel.textContent = "1800–2020";
+    if (allYears.checked) { st.range = null; yearLabel.textContent = "1800–2020"; }
+    else applyYearWindow();
     setEpoch(null, true); draw();
+  });
+  const winBox = $("#winBox");
+  winBox.querySelectorAll("button").forEach((b) => {
+    b.onclick = () => {
+      st.win = +b.dataset.w;
+      winBox.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+      if (!allYears.checked) { applyYearWindow(); draw(); }
+    };
   });
   playBtn.addEventListener("click", () => {
     if (playing) { playing = 0; playBtn.textContent = "▶"; return; }
@@ -817,9 +849,8 @@ window.GRAPH={"meta": {"built": "pipeline", "nodes": 2473, "links": 6491, "lanes
     const step = () => {
       if (!playing) return;
       st.year = Math.min(2020, st.year + (reduced ? 2 : 0.55));
-      st.range = [st.year, st.year];
+      applyYearWindow();
       yearInput.value = String(Math.round(st.year));
-      yearLabel.textContent = String(Math.round(st.year));
       syncSlider(); paint();
       if (st.year < 2020) requestAnimationFrame(step);
       else { playing = 0; playBtn.textContent = "▶"; }
