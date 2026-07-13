@@ -177,6 +177,7 @@ PERSON_SEEDS = [
     ("Владимир Рудольфович Соловьёв", 1963), ("Захар Прилепин", 1975),
     ("Константин Юрьевич Богомолов", 1975), ("Ярослав Юрьевич Дронов", 1991),
     ("Юрий Александрович Борисов", 1992), ("Екатерина Михайловна Мизулина", 1984),
+    ("Олег Юрьевич Тиньков", 1967),
 ]
 
 # группы: (варианты точного ru-лейбла, ключевые слова для скоринга описания)
@@ -821,6 +822,16 @@ def stage_build():
                 "url": p.get("url") or "https://github.com/haskiindahouse/svoi-lyudi",
                 "community": 0, "btw": 0, "deg": 0, "lrank": 0,
                 "x1": round((ax_p - 1780) / 246, 4), "y1": 0.55, "x2": 0.5, "y2": 0.06})
+        for o in pers.get("orgs", []):
+            oid = "P:" + o["name"]
+            ax_o = min(max((o.get("from") or 2000), 1780), 2026)
+            graph["nodes"].append({
+                "id": oid, "label": o["name"], "type": "institution",
+                "birth": o.get("from"), "death": o.get("to"), "sphere": "институция",
+                "desc": (o.get("desc", "") + " · личный слой").strip(" ·"),
+                "extract": "", "img": None, "url": o.get("url") or "",
+                "community": 0, "btw": 0, "deg": 0, "lrank": 0,
+                "x1": round((ax_o - 1780) / 246, 4), "y1": 0.5, "x2": 0.5, "y2": 0.1})
         lab2id = {}
         for n in graph["nodes"]:
             k = norm_key(n["label"])
