@@ -1,0 +1,898 @@
+<style>
+  :root {
+    --surface: #fdfcf9; --plane: #f6f4ef;
+    --ink: #141310; --ink2: #55524b; --muted: #8b877e;
+    --grid: #e5e2d9; --hair: rgba(20,19,16,.10);
+    --accent: #eb6834;
+    --s-vlast: #e34948; --s-art: #4a3aa7; --s-money: #eda100; --s-silo: #008300;
+    --s-nauka: #2a78d6; --s-cerkov: #e87ba4; --s-other: #898781;
+    --s-circle: #eb6834; --s-inst: #898781;
+    --edge: rgba(20,19,16,.30); --halo: rgba(253,252,249,.85);
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+    --shadow: 0 12px 40px rgba(20,19,16,.16);
+  }
+  @media (prefers-color-scheme: dark) { :root {
+    --surface: #161513; --plane: #0c0b0a;
+    --ink: #f4f2ec; --ink2: #c6c2b6; --muted: #8b877e;
+    --grid: #2e2c27; --hair: rgba(244,242,236,.10);
+    --accent: #d95926;
+    --s-vlast: #e66767; --s-art: #9085e9; --s-money: #c98500; --s-silo: #008300;
+    --s-nauka: #3987e5; --s-cerkov: #d55181; --s-other: #898781;
+    --s-circle: #d95926; --s-inst: #898781;
+    --edge: rgba(244,242,236,.28); --halo: rgba(22,21,19,.85);
+    --shadow: 0 12px 40px rgba(0,0,0,.5);
+  } }
+  :root[data-theme="dark"] {
+    --surface: #161513; --plane: #0c0b0a;
+    --ink: #f4f2ec; --ink2: #c6c2b6; --muted: #8b877e;
+    --grid: #2e2c27; --hair: rgba(244,242,236,.10);
+    --accent: #d95926;
+    --s-vlast: #e66767; --s-art: #9085e9; --s-money: #c98500; --s-silo: #008300;
+    --s-nauka: #3987e5; --s-cerkov: #d55181; --s-other: #898781;
+    --s-circle: #d95926; --s-inst: #898781;
+    --edge: rgba(244,242,236,.28); --halo: rgba(22,21,19,.85);
+    --shadow: 0 12px 40px rgba(0,0,0,.5);
+  }
+  :root[data-theme="light"] {
+    --surface: #fdfcf9; --plane: #f6f4ef;
+    --ink: #141310; --ink2: #55524b; --muted: #8b877e;
+    --grid: #e5e2d9; --hair: rgba(20,19,16,.10);
+    --accent: #eb6834;
+    --s-vlast: #e34948; --s-art: #4a3aa7; --s-money: #eda100; --s-silo: #008300;
+    --s-nauka: #2a78d6; --s-cerkov: #e87ba4; --s-other: #898781;
+    --s-circle: #eb6834; --s-inst: #898781;
+    --edge: rgba(20,19,16,.30); --halo: rgba(253,252,249,.85);
+    --shadow: 0 12px 40px rgba(20,19,16,.16);
+  }
+
+  #app { position: relative; height: 100dvh; min-height: 480px; background: var(--surface);
+    color: var(--ink); font: 14px/1.45 var(--sans); overflow: hidden;
+    -webkit-font-smoothing: antialiased; }
+  #app * { box-sizing: border-box; }
+  #app ::selection { background: color-mix(in srgb, var(--accent) 25%, transparent); }
+  #cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
+  #cv.drag { cursor: grabbing; }
+
+  @keyframes barIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+  @keyframes barUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes rowIn { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+
+  .bar { position: absolute; top: 0; left: 0; right: 0; z-index: 5; display: flex; flex-wrap: wrap;
+    gap: 8px 16px; align-items: center; padding: 10px 16px;
+    background: color-mix(in srgb, var(--surface) 84%, transparent);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--hair);
+    animation: barIn .5s .1s backwards; }
+  .brand { display: flex; flex-direction: column; gap: 1px; }
+  .brand .mark { font: 700 13.5px/1 var(--mono); letter-spacing: .22em; }
+  .brand small { font: 500 10px/1.3 var(--mono); letter-spacing: .08em; color: var(--muted);
+    text-transform: uppercase; }
+
+  .search { position: relative; flex: 1 1 190px; max-width: 330px; }
+  .search input { width: 100%; height: 32px; padding: 0 12px; border: 1px solid var(--grid);
+    border-radius: 4px; background: var(--surface); color: var(--ink); font: 13.5px var(--sans);
+    transition: border-color .15s, box-shadow .15s; }
+  .search input::placeholder { color: var(--muted); }
+  .search input:hover { border-color: var(--muted); }
+  .search input:focus { outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+  #hints { position: absolute; top: calc(100% + 5px); left: 0; right: 0; background: var(--surface);
+    border: 1px solid var(--grid); border-radius: 5px; box-shadow: var(--shadow);
+    max-height: 300px; overflow-y: auto; display: none; animation: barIn .16s backwards; z-index: 9; }
+  #hints button { display: flex; gap: 8px; align-items: baseline; width: 100%; padding: 8px 12px;
+    border: 0; background: none; color: var(--ink); font: 13px var(--sans); text-align: left; cursor: pointer; }
+  #hints button:hover, #hints button:focus { background: var(--plane); outline: none; }
+  #hints .yrs { margin-left: auto; color: var(--muted); font: 11px var(--mono); }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 5px; }
+  .chips button, .rbtn { height: 27px; padding: 0 11px; border: 1px solid var(--grid); border-radius: 999px;
+    background: var(--surface); color: var(--ink2); font: 12px/1 var(--sans); cursor: pointer;
+    transition: background .14s, color .14s, border-color .14s, transform .1s; }
+  .chips button:hover, .rbtn:hover { border-color: var(--muted); color: var(--ink); }
+  .chips button:active, .rbtn:active { transform: scale(.96); }
+  .chips button[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+  .chips button:focus-visible, .rbtn:focus-visible, #app input:focus-visible, #app [tabindex]:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 1px; }
+  .rbtn { border-radius: 4px; font-family: var(--mono); font-size: 11.5px; letter-spacing: .02em; }
+  #stats { color: var(--muted); font: 11px var(--mono); white-space: nowrap; letter-spacing: .02em; }
+
+  #legend { position: absolute; left: 16px; bottom: 120px; z-index: 4; display: flex; flex-direction: column;
+    gap: 2px; padding: 12px 14px; background: color-mix(in srgb, var(--surface) 90%, transparent);
+    backdrop-filter: blur(8px); border: 1px solid var(--hair); border-radius: 6px; max-width: 200px;
+    animation: fadeIn .6s .5s backwards; }
+  #legend .t { font: 700 9.5px var(--mono); letter-spacing: .18em; color: var(--muted); margin-bottom: 5px; }
+  #legend button { display: flex; align-items: center; gap: 8px; border: 0; background: none; padding: 2.5px 0;
+    color: var(--ink2); font: 12px/1.3 var(--sans); cursor: pointer; transition: opacity .15s, color .12s; }
+  #legend button:hover { color: var(--ink); }
+  #legend button.dim { opacity: .3; }
+  #legend i { width: 9px; height: 9px; border-radius: 50%; flex: none;
+    box-shadow: 0 0 0 1px var(--hair); }
+  #legend .sq i { border-radius: 2px; }
+  #legend .n { margin-left: auto; color: var(--muted); font: 10.5px var(--mono); }
+
+  #epochBar { position: absolute; left: 0; right: 0; bottom: 51px; z-index: 5; display: flex;
+    gap: 4px; padding: 8px 16px; overflow-x: auto; scrollbar-width: none;
+    background: color-mix(in srgb, var(--surface) 84%, transparent);
+    backdrop-filter: blur(8px); border-top: 1px solid var(--hair);
+    animation: barUp .5s .25s backwards; }
+  #epochBar::-webkit-scrollbar { display: none; }
+  #epochBar button { flex: none; height: 26px; padding: 0 12px; border: 1px solid var(--grid);
+    border-radius: 999px; background: var(--surface); color: var(--ink2); font: 12px/1 var(--sans);
+    cursor: pointer; transition: background .16s, color .16s, border-color .16s, transform .1s; }
+  #epochBar button:hover { border-color: var(--accent); color: var(--ink); }
+  #epochBar button:active { transform: scale(.96); }
+  #epochBar button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent);
+    color: #fff; font-weight: 600; }
+
+  #epanel { position: absolute; left: 16px; top: 66px; bottom: 152px; width: 248px; z-index: 4;
+    overflow-y: auto; padding: 14px; background: color-mix(in srgb, var(--surface) 92%, transparent);
+    backdrop-filter: blur(8px); border: 1px solid var(--hair); border-radius: 6px; display: none;
+    scrollbar-width: thin; }
+  #epanel.open { display: block; animation: barIn .25s backwards; }
+  #epanel .t { font: 700 10px var(--mono); letter-spacing: .14em; color: var(--ink); margin-bottom: 8px;
+    text-transform: uppercase; }
+  #epanel .sub { font: 700 9px var(--mono); letter-spacing: .18em; text-transform: uppercase;
+    color: var(--muted); margin: 12px 0 5px; border-top: 1px solid var(--hair); padding-top: 10px; }
+  #epanel .sub:first-of-type { border-top: 0; padding-top: 0; }
+  #epanel button { display: flex; align-items: center; gap: 8px; width: 100%; border: 0;
+    background: none; padding: 3.5px 4px; color: var(--ink); font: 13px/1.3 var(--sans);
+    cursor: pointer; text-align: left; border-radius: 4px; transition: background .12s; }
+  #epanel button:hover { background: var(--plane); }
+  #epanel i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  #epanel .yrs { margin-left: auto; color: var(--muted); font: 10.5px var(--mono); }
+  @media (max-width: 700px) { #epanel { display: none !important; } }
+
+  .timebar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; display: flex; gap: 14px;
+    align-items: center; padding: 10px 16px; background: color-mix(in srgb, var(--surface) 84%, transparent);
+    backdrop-filter: blur(8px); border-top: 1px solid var(--hair);
+    animation: barUp .5s .35s backwards; }
+  #yearLabel { font: 700 13px var(--mono); min-width: 62px; letter-spacing: .02em;
+    font-variant-numeric: tabular-nums; }
+  .timebar label { display: flex; gap: 6px; align-items: center; color: var(--ink2);
+    font: 12px var(--sans); white-space: nowrap; cursor: pointer; }
+  .timebar input[type="checkbox"] { accent-color: var(--accent); }
+  #playBtn { width: 30px; height: 30px; flex: none; border: 1px solid var(--grid); border-radius: 50%;
+    background: var(--surface); color: var(--ink); cursor: pointer; font-size: 11px;
+    transition: border-color .15s, background .15s, transform .1s; }
+  #playBtn:hover { border-color: var(--accent); color: var(--accent); }
+  #playBtn:active { transform: scale(.92); }
+  #year { flex: 1; -webkit-appearance: none; appearance: none; height: 26px; background: none; cursor: pointer; }
+  #year::-webkit-slider-runnable-track { height: 3px; border-radius: 2px;
+    background: linear-gradient(to right, var(--accent) var(--fill, 100%), var(--grid) var(--fill, 100%)); }
+  #year::-webkit-slider-thumb { -webkit-appearance: none; width: 15px; height: 15px; margin-top: -6px;
+    border-radius: 50%; background: var(--surface); border: 2.5px solid var(--accent);
+    box-shadow: 0 1px 4px rgba(0,0,0,.25); transition: transform .12s; }
+  #year::-webkit-slider-thumb:hover { transform: scale(1.15); }
+  #year::-moz-range-track { height: 3px; border-radius: 2px; background: var(--grid); }
+  #year::-moz-range-progress { height: 3px; border-radius: 2px; background: var(--accent); }
+  #year::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--surface);
+    border: 2.5px solid var(--accent); }
+
+  #card { position: absolute; top: 0; right: 0; bottom: 0; width: min(400px, 94vw);
+    z-index: 8; background: var(--surface); border-left: 1px solid var(--grid);
+    box-shadow: var(--shadow); overflow-y: auto; overflow-x: hidden; padding: 0 20px 20px;
+    transform: translateX(105%); transition: transform .3s cubic-bezier(.2,.85,.25,1);
+    visibility: hidden; scrollbar-width: thin; }
+  #card.open { transform: none; visibility: visible; }
+  #card .photo { margin: 0 -20px 14px; height: 200px; background: var(--plane);
+    border-bottom: 1px solid var(--grid); position: relative; overflow: hidden; }
+  #card .photo img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block;
+    position: relative; z-index: 1; filter: grayscale(.85) sepia(.1) contrast(1.02);
+    transition: filter .45s ease; animation: fadeIn .5s backwards; }
+  #card .photo:hover img { filter: none; }
+  #card .photo .ph { position: absolute; inset: 0; display: flex; align-items: center;
+    justify-content: center; font: 700 52px var(--mono); color: var(--grid); letter-spacing: .05em;
+    background: repeating-linear-gradient(45deg, transparent 0 9px, var(--hair) 9px 10px); }
+  #card .fileno { font: 600 9.5px var(--mono); letter-spacing: .16em; color: var(--muted);
+    text-transform: uppercase; margin: 2px 0 6px; animation: rowIn .3s .05s backwards; }
+  #card h2 { margin: 0 0 3px; font: 700 19px/1.25 var(--sans); text-wrap: balance;
+    animation: rowIn .3s .08s backwards; }
+  #card .meta { color: var(--ink2); font: 12px var(--sans); margin-bottom: 9px;
+    animation: rowIn .3s .11s backwards; }
+  #card .badges { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 4px;
+    animation: rowIn .3s .14s backwards; }
+  #card .badge { display: inline-block; padding: 2.5px 9px; border-radius: 999px;
+    font: 600 10.5px var(--mono); letter-spacing: .04em;
+    border: 1px solid var(--hair); color: var(--ink2); }
+  #card .badge.bridge { border-color: var(--accent); color: var(--accent); }
+  #card .extract { font: 13.5px/1.6 var(--sans); color: var(--ink); margin: 8px 0 2px;
+    animation: rowIn .3s .17s backwards; }
+  #card .desc { color: var(--ink2); font: 13px var(--sans); margin: 6px 0 10px; }
+  #card .links { display: flex; gap: 12px; margin: 10px 0 2px; animation: rowIn .3s .2s backwards; }
+  #card .links a { color: var(--accent); font: 600 13px var(--sans); text-decoration: none; }
+  #card .links a:hover { text-decoration: underline; }
+  #card h3 { font: 700 9.5px var(--mono); letter-spacing: .18em; text-transform: uppercase;
+    color: var(--muted); margin: 16px 0 5px; border-top: 1px solid var(--grid); padding-top: 12px;
+    display: flex; justify-content: space-between; }
+  #card h3 .n { letter-spacing: 0; }
+  #card ul { list-style: none; margin: 0; padding: 0; }
+  #card li { display: flex; gap: 8px; align-items: baseline; padding: 3.5px 0; font-size: 13px;
+    animation: rowIn .32s both; animation-delay: calc(var(--i, 0) * 22ms + .18s); }
+  #card li .who { flex: 1; min-width: 0; }
+  #card li .who button { border: 0; background: none; padding: 0; color: var(--ink); font: 13px var(--sans);
+    cursor: pointer; text-align: left; text-decoration: underline; text-decoration-color: var(--hair);
+    text-underline-offset: 3px; transition: text-decoration-color .15s; }
+  #card li .who button:hover { text-decoration-color: var(--accent); color: var(--ink); }
+  #card li .yrs { color: var(--muted); font: 10.5px var(--mono); white-space: nowrap; }
+  #card li a { color: var(--muted); font: 10px var(--mono); letter-spacing: .06em; text-transform: uppercase;
+    text-decoration: none; border-bottom: 1px dotted var(--muted); transition: color .15s, border-color .15s; }
+  #card li a:hover { color: var(--accent); border-color: var(--accent); }
+  #cardClose { position: absolute; top: 10px; right: 10px; width: 30px; height: 30px; border: 0;
+    border-radius: 50%; background: color-mix(in srgb, var(--surface) 80%, transparent);
+    backdrop-filter: blur(4px); color: var(--ink); font-size: 14px; cursor: pointer; z-index: 2;
+    transition: background .15s, transform .1s; }
+  #cardClose:hover { background: var(--surface); }
+  #cardClose:active { transform: scale(.9); }
+
+  #tip { position: absolute; z-index: 7; pointer-events: none; background: var(--ink); color: var(--surface);
+    padding: 6px 10px; border-radius: 4px; font: 12px var(--sans); max-width: 260px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.25); opacity: 0; transition: opacity .14s; }
+  #tip.on { opacity: 1; }
+  #tip .yrs { opacity: .65; font-family: var(--mono); font-size: 10.5px; }
+  #tip .sph { opacity: .8; }
+  #help { position: absolute; right: 16px; bottom: 120px; z-index: 3; color: var(--muted);
+    font: 10.5px var(--mono); letter-spacing: .04em; text-align: right;
+    animation: fadeIn .8s 1s backwards; }
+  #help a { color: var(--muted); text-decoration: none; border-bottom: 1px dotted var(--muted); }
+  #help a:hover { color: var(--accent); border-color: var(--accent); }
+  @media (max-width: 700px) { .brand small, #help { display: none; } #legend { display: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    #app *, #card, #card li, .bar, .timebar, #epochBar, #legend, #epanel { transition: none !important; animation: none !important; }
+  }
+</style>
+
+<div id="app">
+  <canvas id="cv" aria-label="Интерактивный граф связей российской элиты, 1800–2020"></canvas>
+  <header class="bar">
+    <div class="brand"><span class="mark">СВОИ ЛЮДИ</span><small>картотека русской элиты · 1800–2020</small></div>
+    <div class="search">
+      <input id="q" placeholder="Найти человека или тусовку…" autocomplete="off" aria-label="Поиск по графу">
+      <div id="hints" role="listbox"></div>
+    </div>
+    <div class="chips" id="edgeChips" role="group" aria-label="Фильтр типов связей"></div>
+    <button class="rbtn" id="layoutBtn" title="Переключить раскладку">⇆ ХРОНОЛОГИЯ</button>
+    <span id="stats"></span>
+  </header>
+  <div id="legend" aria-label="Легенда сфер"></div>
+  <div id="help">колесо — масштаб · клик — досье · тащить — панорама · <a href="https://github.com/haskiindahouse/svoi-lyudi" target="_blank" rel="noopener">github ↗</a></div>
+  <div id="epochBar" role="group" aria-label="Эпохи"></div>
+  <div id="epanel" aria-label="Обзор эпохи"></div>
+  <footer class="timebar">
+    <button id="playBtn" aria-label="Проиграть время">▶</button>
+    <span id="yearLabel">1800–2020</span>
+    <input type="range" id="year" min="1800" max="2020" value="2020" step="1" aria-label="Год">
+    <label><input type="checkbox" id="allYears" checked> весь период</label>
+  </footer>
+  <aside id="card" aria-live="polite"></aside>
+  <div id="tip" aria-hidden="true"></div>
+</div>
+
+<script>
+/*__DATA__*/
+(function () {
+  "use strict";
+  const G = window.GRAPH;
+  const $ = (s) => document.querySelector(s);
+  const cv = $("#cv"), ctx = cv.getContext("2d");
+  const app = $("#app");
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // ---------- данные ----------
+  const nodes = G.nodes, links = G.links;
+  const byId = new Map(nodes.map((n) => [n.id, n]));
+  const adj = new Map(nodes.map((n) => [n.id, []]));
+  links.forEach((l) => { adj.get(l.s).push(l); adj.get(l.t).push(l); });
+  nodes.forEach((n) => {
+    n.r = baseR(n);
+    n.degCore = (adj.get(n.id) || []).filter((l) => l.type !== "influence").length;
+  });
+  const tOrd = { circle: 0, person: 1, institution: 2 };
+  const labelRank = [...nodes].sort((a, b) =>
+    (tOrd[a.type] - tOrd[b.type]) || (b.btw || 0) - (a.btw || 0));
+  labelRank.forEach((n, i) => { n.lrank = i; });
+
+  function baseR(n) {
+    const d = Math.sqrt(n.deg || 1);
+    if (n.type === "circle") return 5 + d * 1.4;
+    if (n.type === "institution") return 3.5 + d * 0.9;
+    return 2.6 + d * 1.1;
+  }
+
+  const SPHERE = {
+    "власть": "--s-vlast", "искусство": "--s-art", "деньги": "--s-money",
+    "силовики": "--s-silo", "наука": "--s-nauka", "церковь": "--s-cerkov",
+    "прочее": "--s-other", "тусовка": "--s-circle", "институция": "--s-inst",
+  };
+  const EDGE_GROUPS = [
+    { key: "kin", label: "родство", types: ["family", "marriage", "partner"], dash: [] },
+    { key: "mind", label: "учёба · влияние", types: ["student", "influence"], dash: [6, 4] },
+    { key: "friend", label: "дружба", types: ["friend"], dash: [1.5, 3.5] },
+    { key: "circle", label: "тусовки", types: ["circle"], dash: [] },
+    { key: "edu", label: "вузы", types: ["education"], dash: [] },
+    { key: "work", label: "служба · работа", types: ["work"], dash: [] },
+  ];
+  const TYPE_LABEL = { family: "родство", marriage: "брак", partner: "партнёрство",
+    student: "учёба/наставник", influence: "влияние идей", friend: "дружба",
+    circle: "тусовка", education: "вуз", work: "служба/работа" };
+  const typeGroup = {};
+  EDGE_GROUPS.forEach((g) => g.types.forEach((t) => { typeGroup[t] = g; }));
+
+  const EPOCHS = [
+    { name: "Золотой век", from: 1800, to: 1855 },
+    { name: "Эпоха реформ", from: 1855, to: 1894 },
+    { name: "Серебряный век", from: 1894, to: 1917 },
+    { name: "Революция и авангард", from: 1917, to: 1932 },
+    { name: "Сталинская эпоха", from: 1932, to: 1953 },
+    { name: "Оттепель", from: 1953, to: 1968 },
+    { name: "Застой", from: 1968, to: 1985 },
+    { name: "Перестройка и 90-е", from: 1985, to: 2000 },
+    { name: "Путинская эпоха", from: 2000, to: 2020 },
+  ];
+  const LANES = (G.meta && G.meta.lanes) || [];
+
+  // ---------- состояние ----------
+  const st = {
+    layout: 0, year: 2020,
+    range: null, epoch: null,
+    active: new Set(EDGE_GROUPS.map((g) => g.key)),
+    sphere: null, sel: null, hover: null,
+    tx: 0, ty: 0, k: 1, anim: 0,
+    focusA: 0,        // 0..1 кроссфейд фокуса
+    hoverT: 0,        // рост узла под курсором
+    intro: reduced ? 1 : 0,
+  };
+
+  // ---------- твин-движок ----------
+  const tweens = new Set();
+  let animId = 0, playing = 0;
+  const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+  function tween(dur, fn) {
+    if (reduced) { fn(1, true); paint(); return; }
+    tweens.add({ t0: performance.now(), dur, fn });
+    pump();
+  }
+  function pump() {
+    if (animId) return;
+    const loop = (now) => {
+      let live = false;
+      for (const tw of [...tweens]) {
+        const p = Math.min(1, (now - tw.t0) / tw.dur);
+        tw.fn(easeOut(p), p >= 1);
+        if (p >= 1) tweens.delete(tw); else live = true;
+      }
+      paint();
+      if (live || playing) animId = requestAnimationFrame(loop);
+      else animId = 0;
+    };
+    animId = requestAnimationFrame(loop);
+  }
+  function flyTo(k2, tx2, ty2, dur) {
+    const { k, tx, ty } = st;
+    tween(dur || 520, (e) => {
+      st.k = k + (k2 - k) * e; st.tx = tx + (tx2 - tx) * e; st.ty = ty + (ty2 - ty) * e;
+    });
+  }
+
+  // ---------- палитра из токенов ----------
+  let C = {};
+  function readTheme() {
+    const cs = getComputedStyle(document.documentElement);
+    const bg = getComputedStyle(app);
+    C = { surface: bg.backgroundColor, edge: cs.getPropertyValue("--edge").trim(),
+      ink: cs.getPropertyValue("--ink").trim(), ink2: cs.getPropertyValue("--ink2").trim(),
+      muted: cs.getPropertyValue("--muted").trim(), halo: cs.getPropertyValue("--halo").trim(),
+      accent: cs.getPropertyValue("--accent").trim() };
+    for (const [k, v] of Object.entries(SPHERE)) C[k] = cs.getPropertyValue(v).trim();
+    draw();
+  }
+  new MutationObserver(readTheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", readTheme);
+
+  // ---------- геометрия ----------
+  let W = 0, H = 0, DPR = 1;
+  function resize() {
+    DPR = Math.min(devicePixelRatio || 1, 2);
+    W = app.clientWidth; H = app.clientHeight;
+    cv.width = W * DPR; cv.height = H * DPR;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    draw();
+  }
+  addEventListener("resize", resize);
+
+  const PAD = 60, TOP = 70, BOT = 80;
+  function wx(n) { const x = lerp(n.x1, n.x2, st.anim); return PAD + x * (W - 2 * PAD); }
+  function wy(n) { const y = lerp(n.y1, n.y2, st.anim); return TOP + y * (H - TOP - BOT); }
+  function px(n) { return wx(n) * st.k + st.tx; }
+  function py(n) { return wy(n) * st.k + st.ty; }
+  function sx(year) { return (PAD + (year - 1780) / 240 * (W - 2 * PAD)) * st.k + st.tx; }
+  function syw(t) { return (TOP + t * (H - TOP - BOT)) * st.k + st.ty; }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+
+  // ---------- видимость ----------
+  function activeSpan(n) {
+    const a = n.type === "person" ? (n.birth || 1785) + 15 : (n.birth || 1800);
+    return [a, n.death || 2020];
+  }
+  function nodeOn(n) {
+    if (st.sphere && n.sphere !== st.sphere && n.type === "person") return false;
+    if (!st.range) return true;
+    const [a, b] = st.range, s = activeSpan(n);
+    return s[0] <= b && a <= s[1];
+  }
+  function edgeOn(l) {
+    const g = typeGroup[l.type];
+    if (g && !st.active.has(g.key)) return false;
+    const a = byId.get(l.s), b = byId.get(l.t);
+    if (!nodeOn(a) || !nodeOn(b)) return false;
+    if (st.range && ((l.from || 1800) > st.range[1] || st.range[0] > (l.to || 2020))) return false;
+    return true;
+  }
+  function neighborsOf(n) {
+    const s = new Set();
+    if (!n) return s;
+    for (const l of adj.get(n.id) || []) if (edgeOn(l)) { s.add(l.s); s.add(l.t); }
+    return s;
+  }
+
+  // ---------- отрисовка ----------
+  let raf = 0;
+  function draw() {
+    if (animId) return; // цикл твинов сам перерисует
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(paint);
+  }
+
+  function paint() {
+    ctx.clearRect(0, 0, W, H);
+    const selSet = neighborsOf(st.sel);
+    const hovSet = neighborsOf(st.hover);
+    const focus = st.sel || st.hover;
+    const fA = st.focusA;
+    let ne = 0, nn = 0;
+    const chrono = st.layout === 0 || st.anim < 0.5;
+
+    // фон: полосы эпох + дорожки сфер
+    if (chrono) {
+      ctx.textBaseline = "top";
+      EPOCHS.forEach((ep, i) => {
+        const x1 = sx(ep.from), x2 = sx(ep.to);
+        if (x2 < 0 || x1 > W) return;
+        if (st.epoch === i) { ctx.fillStyle = C.accent; ctx.globalAlpha = 0.06; ctx.fillRect(x1, 0, x2 - x1, H); }
+        else if (i % 2) { ctx.fillStyle = C.ink; ctx.globalAlpha = 0.025; ctx.fillRect(x1, 0, x2 - x1, H); }
+        ctx.globalAlpha = 0.5; ctx.fillStyle = C.muted; ctx.fillRect(x1, 0, 1, H);
+        ctx.font = (st.epoch === i ? "700 " : "600 ") + "10px " + MONO;
+        const t = ep.name.toUpperCase(), tw = ctx.measureText(t).width;
+        if (tw < x2 - x1 - 14) {  // подпись только если влезает в свою полосу
+          ctx.globalAlpha = st.epoch === i ? 1 : 0.7;
+          ctx.fillStyle = st.epoch === i ? C.accent : C.muted;
+          ctx.fillText(t, (x1 + x2) / 2 - tw / 2, 66);
+        }
+      });
+      ctx.globalAlpha = 1;
+      LANES.forEach((ln) => {
+        const y1 = syw(ln.lo), y2 = syw(ln.hi);
+        if (y2 - y1 < 34 || y2 < 80 || y1 > H) return;
+        ctx.globalAlpha = 0.55; ctx.fillStyle = C[ln.name] || C.muted;
+        ctx.font = "600 9.5px " + MONO;
+        ctx.save(); ctx.translate(10, (y1 + y2) / 2 + ctx.measureText(ln.name).width / 2);
+        ctx.rotate(-Math.PI / 2); ctx.fillText(ln.name.toUpperCase(), 0, 0); ctx.restore();
+        ctx.globalAlpha = 0.12; ctx.fillRect(0, y2, W, 1);
+      });
+      ctx.globalAlpha = 1;
+    }
+
+    // рёбра
+    for (const l of links) {
+      if (!edgeOn(l)) continue;
+      ne++;
+      const a = byId.get(l.s), b = byId.get(l.t);
+      const hot = focus && (l.s === focus.id || l.t === focus.id);
+      const base = l.type === "circle" ? 0.3 : 0.38;
+      let alpha;
+      if (!focus) alpha = base;
+      else if (hot) alpha = lerp(base, 0.9, fA);
+      else { alpha = lerp(base, 0.06, fA); if (alpha < 0.08 && st.k < 0.5) continue; }
+      ctx.globalAlpha = alpha * introEdge(a, b);
+      ctx.strokeStyle = hot && fA > 0.4 ? C[a.type === "person" ? a.sphere : b.sphere] || C.edge : C.edge;
+      ctx.lineWidth = hot ? lerp(0.7, 1.6, fA) : (l.type === "marriage" ? 1.3 : 0.7);
+      ctx.setLineDash(typeGroup[l.type] ? typeGroup[l.type].dash : []);
+      ctx.beginPath(); ctx.moveTo(px(a), py(a)); ctx.lineTo(px(b), py(b)); ctx.stroke();
+    }
+    ctx.setLineDash([]); ctx.globalAlpha = 1;
+
+    // узлы
+    const yearNow = st.range ? st.range[1] : null;
+    for (const n of nodes) {
+      if (!nodeOn(n)) continue;
+      nn++;
+      const x = px(n), y = py(n);
+      if (x < -30 || x > W + 30 || y < -30 || y > H + 30) continue;
+      const inFocus = focus && (n === focus || (focus === st.sel ? selSet : hovSet).has(n.id));
+      const iA = introNode(n);
+      let alpha = 1;
+      if (focus) alpha = inFocus ? 1 : lerp(1, 0.13, fA);
+      else if (st.sphere && n.type !== "person") alpha = 0.5;
+      ctx.globalAlpha = alpha * iA;
+      const col = C[n.sphere] || C["прочее"];
+      let r = n.r * Math.min(1.2, Math.max(0.6, st.k)) * (0.4 + 0.6 * iA);
+      if (n === st.hover) r *= 1 + 0.22 * st.hoverT;
+      if (n.type === "institution") {
+        ctx.fillStyle = C.surface; ctx.strokeStyle = C.muted; ctx.lineWidth = 1.2;
+        ctx.beginPath(); rrect(x - r, y - r, r * 2, r * 2, 2); ctx.fill(); ctx.stroke();
+      } else {
+        ctx.fillStyle = col; ctx.strokeStyle = C.surface; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); ctx.stroke();
+        if (n.type === "circle") { ctx.strokeStyle = col; ctx.lineWidth = 1.3;
+          ctx.beginPath(); ctx.arc(x, y, r + 2.6, 0, 7); ctx.stroke(); }
+      }
+      // вспышка «рождения» при проигрывании времени
+      if (playing && yearNow != null) {
+        const s0 = activeSpan(n)[0], dt = st.year - s0;
+        if (dt >= 0 && dt < 2.5) {
+          ctx.globalAlpha = (1 - dt / 2.5) * 0.8;
+          ctx.strokeStyle = col; ctx.lineWidth = 1.6;
+          ctx.beginPath(); ctx.arc(x, y, r + 3 + dt * 5, 0, 7); ctx.stroke();
+          ctx.globalAlpha = alpha * iA;
+        }
+      }
+      if (n === st.sel) { ctx.strokeStyle = C.ink; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(x, y, r + 4.5, 0, 7); ctx.stroke(); }
+    }
+    ctx.globalAlpha = 1;
+
+    // подписи
+    const lim = st.k > 2.4 ? 400 : st.k > 1.4 ? 160 : st.k > 0.8 ? 60 : 28;
+    ctx.textBaseline = "middle";
+    for (const n of nodes) {
+      if (!nodeOn(n)) continue;
+      const inFocus = focus && (n === focus || (focus === st.sel ? selSet : hovSet).has(n.id));
+      const always = n === st.sel || n === st.hover;
+      if (n.type === "institution" && st.k < 1.2 && !always && !inFocus) continue;
+      const tier = n.lrank < lim || (n.type === "circle" && st.k > 0.6);
+      if (!always && !(tier && (!focus || inFocus))) continue;
+      const x = px(n), y = py(n);
+      if (x < -30 || x > W + 30 || y < -30 || y > H + 30) continue;
+      ctx.globalAlpha = (focus && !inFocus && !always ? lerp(1, 0.14, fA) : 1) * introNode(n);
+      const bold = n.type === "circle" || always;
+      ctx.font = (bold ? "600 " : "") + "11.5px " + SANS;
+      ctx.strokeStyle = C.halo; ctx.lineWidth = 3;
+      const lx = x + n.r + 5;
+      ctx.strokeText(n.label, lx, y);
+      ctx.fillStyle = always ? C.ink : (n.type === "circle" ? C[n.sphere] : C.ink2);
+      ctx.fillText(n.label, lx, y);
+    }
+    ctx.globalAlpha = 1;
+
+    // ось времени
+    if (chrono) {
+      ctx.fillStyle = C.muted; ctx.font = "10.5px " + MONO; ctx.textBaseline = "bottom";
+      for (let yy = 1800; yy <= 2020; yy += 20) {
+        const x = sx(yy);
+        if (x < 0 || x > W) continue;
+        ctx.globalAlpha = 0.8; ctx.fillText(String(yy), x - 13, H - BOT + 24);
+        ctx.globalAlpha = 0.22; ctx.fillRect(x, TOP - 10, 1, H - TOP - BOT + 24);
+      }
+      ctx.globalAlpha = 1;
+    }
+    $("#stats").textContent = (st.epoch != null ? EPOCHS[st.epoch].name.toUpperCase() + " · " : "") +
+      nn + " УЗЛОВ · " + ne + " СВЯЗЕЙ";
+  }
+  const MONO = 'ui-monospace, "SF Mono", Menlo, Consolas, monospace';
+  const SANS = 'system-ui, -apple-system, "Segoe UI", sans-serif';
+  function rrect(x, y, w, h, r) { ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); }
+
+  // волна появления: слева направо по хронологии
+  function introNode(n) {
+    if (st.intro >= 1) return 1;
+    return Math.max(0, Math.min(1, (st.intro * 1.3 - n.x1) * 5));
+  }
+  function introEdge(a, b) {
+    if (st.intro >= 1) return 1;
+    return Math.min(introNode(a), introNode(b));
+  }
+
+  // ---------- взаимодействие ----------
+  function pick(mx, my) {
+    let best = null, bd = 144;
+    for (const n of nodes) {
+      if (!nodeOn(n)) continue;
+      const dx = px(n) - mx, dy = py(n) - my, d = dx * dx + dy * dy;
+      const rr = Math.max(9, n.r + 5);
+      if (d < rr * rr && d < bd) { bd = d; best = n; }
+    }
+    return best;
+  }
+
+  let drag = null, pinch = null;
+  cv.addEventListener("pointerdown", (e) => {
+    cv.setPointerCapture(e.pointerId);
+    if (pinch === null && drag) { pinch = { id: e.pointerId, x: e.offsetX, y: e.offsetY }; return; }
+    drag = { id: e.pointerId, x: e.offsetX, y: e.offsetY, tx: st.tx, ty: st.ty, moved: false };
+  });
+  cv.addEventListener("pointermove", (e) => {
+    if (pinch && drag && (e.pointerId === pinch.id || e.pointerId === drag.id)) {
+      if (e.pointerId === pinch.id) { pinch.x = e.offsetX; pinch.y = e.offsetY; }
+      else { drag.x = e.offsetX; drag.y = e.offsetY; }
+      return;
+    }
+    if (drag && e.pointerId === drag.id) {
+      const dx = e.offsetX - drag.x, dy = e.offsetY - drag.y;
+      if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true;
+      if (drag.moved) { cv.classList.add("drag");
+        st.tx = drag.tx + dx; st.ty = drag.ty + dy; draw(); }
+      return;
+    }
+    const n = pick(e.offsetX, e.offsetY);
+    if (n !== st.hover) {
+      st.hover = n; st.hoverT = 0;
+      if (n) tween(180, (p) => { st.hoverT = p; });
+      const a0 = st.focusA;
+      tween(160, (p) => { st.focusA = lerp(a0, (st.sel || st.hover) ? 1 : 0, p); });
+      tip(n, e);
+    } else if (n) tip(n, e);
+  });
+  cv.addEventListener("pointerup", (e) => {
+    cv.classList.remove("drag");
+    if (pinch && e.pointerId === pinch.id) { pinch = null; return; }
+    if (drag && e.pointerId === drag.id) {
+      if (!drag.moved) select(pick(e.offsetX, e.offsetY));
+      drag = null;
+    }
+  });
+  cv.addEventListener("pointerleave", () => { st.hover = null; tip(null); draw(); });
+  cv.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    zoomAt(e.offsetX, e.offsetY, Math.exp(-e.deltaY * 0.0015));
+  }, { passive: false });
+  cv.addEventListener("dblclick", (e) => {
+    const k2 = Math.min(14, st.k * 1.7), f = k2 / st.k;
+    flyTo(k2, e.offsetX - (e.offsetX - st.tx) * f, e.offsetY - (e.offsetY - st.ty) * f, 320);
+  });
+  function zoomAt(mx, my, f) {
+    const k2 = Math.min(14, Math.max(0.35, st.k * f)); f = k2 / st.k;
+    st.tx = mx - (mx - st.tx) * f; st.ty = my - (my - st.ty) * f; st.k = k2; draw();
+  }
+
+  function tip(n, e) {
+    const t = $("#tip");
+    if (!n) { t.classList.remove("on"); return; }
+    t.innerHTML = "<b>" + esc(n.label) + "</b> <span class='yrs'>" + yrs(n) + "</span><br>" +
+      "<span class='sph'>" + esc(n.type === "person" ? n.sphere : (n.type === "circle" ? "тусовка" : "институция")) + "</span>";
+    t.classList.add("on");
+    const r = t.getBoundingClientRect();
+    t.style.left = Math.min(e.offsetX + 14, W - r.width - 8) + "px";
+    t.style.top = Math.min(e.offsetY + 14, H - r.height - 8) + "px";
+  }
+  function yrs(n) {
+    if (!n.birth && !n.death) return "";
+    return (n.birth || "…") + "–" + (n.death || "");
+  }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+
+  // ---------- выбор и досье ----------
+  function select(n, center) {
+    if (n && !nodeOn(n)) { st.sphere = null; setEpoch(null); syncLegend(); }
+    st.sel = n; renderCard(n);
+    const a0 = st.focusA;
+    tween(220, (p) => { st.focusA = lerp(a0, (st.sel || st.hover) ? 1 : 0, p); });
+    if (n && center) {
+      const cx = (W - Math.min(400, W * 0.5)) / 2 + 30;
+      const k2 = Math.max(st.k, 1.8);
+      flyTo(k2, cx - wx(n) * k2, H / 2 - wy(n) * k2, 550);
+    }
+    draw();
+  }
+  function renderCard(n) {
+    const card = $("#card");
+    if (!n) { card.classList.remove("open"); return; }
+    const es = (adj.get(n.id) || []).filter(edgeOn);
+    const groups = new Map();
+    for (const l of es) {
+      const other = byId.get(l.s === n.id ? l.t : l.s);
+      const key = TYPE_LABEL[l.type] || l.type;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push({ other, l });
+    }
+    const pct = n.lrank != null ? Math.round(100 * n.lrank / nodes.length) : 100;
+    const initials = n.label.split(/\s+/).map((w) => w[0]).slice(0, 2).join("");
+    const kind = n.type === "person" ? n.sphere : (n.type === "circle" ? "тусовка" : "институция");
+    let html = "<button id='cardClose' aria-label='Закрыть'>✕</button>" +
+      "<div class='photo'><div class='ph'>" + esc(initials) + "</div>" +
+      (n.img ? "<img src='" + esc(n.img) + "' alt='' onerror=\"this.remove()\">" : "") + "</div>" +
+      "<div class='fileno'>дело № " + esc(String(n.id).replace(/^C:/, "")) + " · " + esc(kind) +
+      (yrs(n) ? " · " + yrs(n) : "") + "</div>" +
+      "<h2>" + esc(n.label) + "</h2>";
+    if (n.desc) html += "<div class='meta'>" + esc(n.desc) + "</div>";
+    html += "<div class='badges'>";
+    if (pct <= 3 && n.type === "person") html += "<span class='badge bridge'>мост между мирами · топ-" + Math.max(1, pct) + "%</span>";
+    html += "<span class='badge'>" + es.length + " связей</span></div>";
+    if (n.extract) html += "<div class='extract'>" + esc(n.extract) + "</div>";
+    html += "<div class='links'><a href='" + esc(n.url) + "' target='_blank' rel='noopener'>читать в Википедии →</a></div>";
+    let idx = 0;
+    for (const [label, arr] of [...groups.entries()].sort((a, b) => b[1].length - a[1].length)) {
+      html += "<h3>" + esc(label) + "<span class='n'>" + arr.length + "</span></h3><ul>";
+      arr.sort((a, b) => (a.l.from || 0) - (b.l.from || 0));
+      for (const { other, l } of arr.slice(0, 60)) {
+        html += "<li style='--i:" + Math.min(idx++, 14) + "'>" +
+          "<span class='who'><button data-go='" + other.id + "'>" + esc(other.label) + "</button></span>" +
+          "<span class='yrs'>" + (l.from || "") + (l.to && l.to !== l.from ? "–" + l.to : "") + "</span>" +
+          (l.src ? "<a href='" + esc(l.src) + "' target='_blank' rel='noopener'>ист.</a>" : "") + "</li>";
+      }
+      if (arr.length > 60) html += "<li class='yrs'>… ещё " + (arr.length - 60) + "</li>";
+      html += "</ul>";
+    }
+    card.innerHTML = html;
+    card.scrollTop = 0;
+    card.classList.add("open");
+    card.querySelector("#cardClose").onclick = () => select(null);
+    card.querySelectorAll("[data-go]").forEach((b) => {
+      b.onclick = () => { const m = byId.get(b.dataset.go); select(m, true); };
+    });
+  }
+
+  // ---------- поиск ----------
+  const q = $("#q"), hints = $("#hints");
+  q.addEventListener("input", () => {
+    const v = q.value.trim().toLowerCase();
+    if (v.length < 2) { hints.style.display = "none"; return; }
+    const m = nodes.filter((n) => n.label.toLowerCase().includes(v)).slice(0, 12);
+    hints.innerHTML = m.map((n) =>
+      "<button role='option' data-id='" + n.id + "'>" + esc(n.label) +
+      " <span class='yrs'>" + yrs(n) + "</span></button>").join("") ||
+      "<button disabled>ничего не нашлось</button>";
+    hints.style.display = "block";
+    hints.querySelectorAll("[data-id]").forEach((b) => {
+      b.onclick = () => { select(byId.get(b.dataset.id), true); hints.style.display = "none"; q.value = ""; };
+    });
+  });
+  q.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { const b = hints.querySelector("[data-id]"); if (b) b.click(); }
+    if (e.key === "Escape") { hints.style.display = "none"; }
+  });
+  document.addEventListener("click", (e) => { if (!e.target.closest(".search")) hints.style.display = "none"; });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && st.sel) select(null);
+    if (e.key === "/" && document.activeElement !== q) { e.preventDefault(); q.focus(); }
+  });
+
+  // ---------- фильтры ----------
+  const chipBox = $("#edgeChips");
+  EDGE_GROUPS.forEach((g) => {
+    const b = document.createElement("button");
+    b.textContent = g.label; b.setAttribute("aria-pressed", "true");
+    b.onclick = () => {
+      const on = st.active.has(g.key);
+      if (on) st.active.delete(g.key); else st.active.add(g.key);
+      b.setAttribute("aria-pressed", String(!on));
+      if (st.sel) renderCard(st.sel);
+      draw();
+    };
+    chipBox.appendChild(b);
+  });
+
+  const legend = $("#legend");
+  const sphereCount = {};
+  nodes.forEach((n) => { sphereCount[n.sphere] = (sphereCount[n.sphere] || 0) + 1; });
+  legend.innerHTML = "<div class='t'>СФЕРЫ</div>";
+  Object.keys(SPHERE).forEach((s) => {
+    const b = document.createElement("button");
+    if (s === "институция") b.className = "sq";
+    b.innerHTML = "<i></i>" + s + "<span class='n'>" + (sphereCount[s] || 0) + "</span>";
+    b.querySelector("i").style.background = "var(" + SPHERE[s] + ")";
+    b.onclick = () => {
+      st.sphere = st.sphere === s ? null : (s !== "тусовка" && s !== "институция" ? s : st.sphere);
+      syncLegend();
+      draw();
+    };
+    legend.appendChild(b);
+  });
+  function syncLegend() {
+    legend.querySelectorAll("button").forEach((x) => x.classList.toggle("dim",
+      st.sphere && !x.textContent.startsWith(st.sphere)));
+  }
+
+  // ---------- время ----------
+  const yearInput = $("#year"), yearLabel = $("#yearLabel"), allYears = $("#allYears"), playBtn = $("#playBtn");
+  function syncSlider() {
+    yearInput.style.setProperty("--fill", ((st.year - 1800) / 220 * 100) + "%");
+  }
+  yearInput.addEventListener("input", () => {
+    st.year = +yearInput.value; yearLabel.textContent = yearInput.value;
+    st.range = [st.year, st.year]; allYears.checked = false;
+    setEpoch(null, true); syncSlider(); draw();
+  });
+  allYears.addEventListener("change", () => {
+    st.range = allYears.checked ? null : [st.year, st.year];
+    if (allYears.checked) yearLabel.textContent = "1800–2020";
+    setEpoch(null, true); draw();
+  });
+  playBtn.addEventListener("click", () => {
+    if (playing) { playing = 0; playBtn.textContent = "▶"; return; }
+    playBtn.textContent = "❚❚";
+    setEpoch(null, true); allYears.checked = false;
+    if (st.year >= 2019) st.year = 1800;
+    playing = 1;
+    const step = () => {
+      if (!playing) return;
+      st.year = Math.min(2020, st.year + (reduced ? 2 : 0.55));
+      st.range = [st.year, st.year];
+      yearInput.value = String(Math.round(st.year));
+      yearLabel.textContent = String(Math.round(st.year));
+      syncSlider(); paint();
+      if (st.year < 2020) requestAnimationFrame(step);
+      else { playing = 0; playBtn.textContent = "▶"; }
+    };
+    requestAnimationFrame(step);
+  });
+
+  // ---------- эпохи ----------
+  const epochBar = $("#epochBar"), epanel = $("#epanel");
+  const epochBtns = EPOCHS.map((ep, i) => {
+    const b = document.createElement("button");
+    b.textContent = ep.name;
+    b.title = ep.from + "–" + ep.to;
+    b.onclick = () => setEpoch(st.epoch === i ? null : i);
+    epochBar.appendChild(b);
+    return b;
+  });
+  function setEpoch(i, keepRange) {
+    st.epoch = i;
+    epochBtns.forEach((b, j) => b.setAttribute("aria-pressed", String(j === i)));
+    legend.style.display = i == null ? "" : "none";
+    if (i == null) {
+      epanel.classList.remove("open");
+      if (!keepRange) {
+        st.range = null; allYears.checked = true; yearLabel.textContent = "1800–2020";
+        flyTo(1, 0, 0, 500);
+      }
+      return;
+    }
+    const ep = EPOCHS[i];
+    st.range = [ep.from, ep.to]; allYears.checked = false;
+    yearLabel.textContent = ep.from + "–" + String(ep.to).slice(2);
+    zoomToEpoch(ep); renderEpanel(ep); draw();
+  }
+  function zoomToEpoch(ep) {
+    if (st.layout !== 0) { flyTo(1, 0, 0, 400); return; }
+    const w1 = PAD + (ep.from - 1780) / 240 * (W - 2 * PAD);
+    const w2 = PAD + (ep.to - 1780) / 240 * (W - 2 * PAD);
+    const k = Math.max(0.9, Math.min(0.92 * W / (w2 - w1), 1.35 * H / (H - TOP - BOT)));
+    flyTo(k, W / 2 - (w1 + w2) / 2 * k, H / 2 - (TOP + 0.5 * (H - TOP - BOT)) * k, 550);
+  }
+  function renderEpanel(ep) {
+    const inEp = nodes.filter(nodeOn);
+    const circles = inEp.filter((n) => n.type === "circle")
+      .sort((a, b) => (b.deg || 0) - (a.deg || 0)).slice(0, 8);
+    const people = inEp.filter((n) => n.type === "person" && (n.degCore || 0) > 1)
+      .sort((a, b) => (b.btw || 0) - (a.btw || 0)).slice(0, 12);
+    let html = "<div class='t'>" + esc(ep.name) + " · " + ep.from + "–" + ep.to + "</div>";
+    if (circles.length) {
+      html += "<div class='sub'>тусовки</div>" + circles.map((n) =>
+        "<button data-go='" + n.id + "'><i style='background:var(--s-circle)'></i>" + esc(n.label) + "</button>").join("");
+    }
+    html += "<div class='sub'>ключевые фигуры</div>" + people.map((n) =>
+      "<button data-go='" + n.id + "'><i style='background:var(" + (SPHERE[n.sphere] || "--s-other") + ")'></i>" +
+      esc(n.label) + "<span class='yrs'>" + (n.degCore || 0) + "</span></button>").join("");
+    epanel.innerHTML = html;
+    epanel.classList.add("open");
+    epanel.querySelectorAll("[data-go]").forEach((b) => {
+      b.onclick = () => select(byId.get(b.dataset.go), true);
+    });
+  }
+
+  // ---------- раскладка ----------
+  $("#layoutBtn").addEventListener("click", () => {
+    st.layout = 1 - st.layout;
+    $("#layoutBtn").textContent = st.layout === 0 ? "⇆ ХРОНОЛОГИЯ" : "⇆ СИЛОВАЯ";
+    const from = st.anim, to = st.layout;
+    tween(600, (p) => { st.anim = from + (to - from) * p; });
+  });
+
+  // ---------- старт ----------
+  readTheme(); resize(); syncSlider();
+  if (!reduced) tween(1600, (p) => { st.intro = p; });
+  document.title = "Свои люди — граф русской элиты";
+})();
+</script>
