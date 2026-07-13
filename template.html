@@ -256,9 +256,9 @@
 </style>
 
 <div id="app">
-  <canvas id="cv" aria-label="Интерактивный граф связей российской элиты, 1800–2020"></canvas>
+  <canvas id="cv" aria-label="Интерактивный граф связей российской элиты, 1800–2026"></canvas>
   <header class="bar">
-    <div class="brand"><span class="mark">СВОИ ЛЮДИ</span><small>картотека русской элиты · 1800–2020</small></div>
+    <div class="brand"><span class="mark">СВОИ ЛЮДИ</span><small>картотека русской элиты · 1800–2026</small></div>
     <div class="search">
       <input id="q" placeholder="Найти человека или тусовку…" autocomplete="off" aria-label="Поиск по графу">
       <div id="hints" role="listbox"></div>
@@ -273,8 +273,8 @@
   <div id="epanel" aria-label="Обзор эпохи"></div>
   <footer class="timebar">
     <button id="playBtn" aria-label="Проиграть время">▶</button>
-    <span id="yearLabel">1800–2020</span>
-    <div class="sliderwrap"><input type="range" id="year" min="1800" max="2020" value="2020" step="1" aria-label="Год"></div>
+    <span id="yearLabel">1800–2026</span>
+    <div class="sliderwrap"><input type="range" id="year" min="1800" max="2026" value="2026" step="1" aria-label="Год"></div>
     <div class="win" id="winBox" role="group" aria-label="Ширина окна времени">
       <button data-w="1">год</button><button data-w="5" aria-pressed="true">5 лет</button><button data-w="10">10 лет</button>
     </div>
@@ -344,12 +344,13 @@
     { name: "Застой", from: 1968, to: 1985 },
     { name: "Перестройка и 90-е", from: 1985, to: 2000 },
     { name: "Путинская эпоха", from: 2000, to: 2020 },
+    { name: "2020-е", from: 2020, to: 2026 },
   ];
   const LANES = (G.meta && G.meta.lanes) || [];
 
   // ---------- состояние ----------
   const st = {
-    layout: 0, year: 2020,
+    layout: 0, year: 2026,
     range: null, epoch: null,
     active: new Set(EDGE_GROUPS.map((g) => g.key)),
     sphere: null, sel: null, hover: null,
@@ -421,14 +422,14 @@
   function wy(n) { const y = lerp(n.y1, n.y2, st.anim); return TOP + y * (H - TOP - BOT); }
   function px(n) { return wx(n) * st.k + st.tx; }
   function py(n) { return wy(n) * st.k + st.ty; }
-  function sx(year) { return (PAD + (year - 1780) / 240 * (W - 2 * PAD)) * st.k + st.tx; }
+  function sx(year) { return (PAD + (year - 1780) / 246 * (W - 2 * PAD)) * st.k + st.tx; }
   function syw(t) { return (TOP + t * (H - TOP - BOT)) * st.k + st.ty; }
   function lerp(a, b, t) { return a + (b - a) * t; }
 
   // ---------- видимость ----------
   function activeSpan(n) {
     const a = n.type === "person" ? (n.birth || 1785) + 15 : (n.birth || 1800);
-    return [a, n.death || 2020];
+    return [a, n.death || 2026];
   }
   function nodeOn(n) {
     if (st.sphere && n.sphere !== st.sphere && n.type === "person") return false;
@@ -441,7 +442,7 @@
     if (g && !st.active.has(g.key)) return false;
     const a = byId.get(l.s), b = byId.get(l.t);
     if (!nodeOn(a) || !nodeOn(b)) return false;
-    if (st.range && ((l.from || 1800) > st.range[1] || st.range[0] > (l.to || 2020))) return false;
+    if (st.range && ((l.from || 1800) > st.range[1] || st.range[0] > (l.to || 2026))) return false;
     return true;
   }
   function neighborsOf(n) {
@@ -583,7 +584,7 @@
     // ось времени
     if (chrono) {
       ctx.fillStyle = C.muted; ctx.font = "10.5px " + MONO; ctx.textBaseline = "bottom";
-      for (let yy = 1800; yy <= 2020; yy += 20) {
+      for (let yy = 1800; yy <= 2026; yy += 20) {
         const x = sx(yy);
         if (x < 0 || x > W) continue;
         ctx.globalAlpha = 0.8; ctx.fillText(String(yy), x - 13, H - BOT + 24);
@@ -812,13 +813,13 @@
   // ---------- время ----------
   const yearInput = $("#year"), yearLabel = $("#yearLabel"), allYears = $("#allYears"), playBtn = $("#playBtn");
   function syncSlider() {
-    yearInput.style.setProperty("--fill", ((st.year - 1800) / 220 * 100) + "%");
+    yearInput.style.setProperty("--fill", ((st.year - 1800) / 226 * 100) + "%");
   }
   st.win = 5;  // ширина окна времени в годах
   function applyYearWindow() {
     const w = st.win;
     const a = Math.max(1800, Math.round(st.year - (w - 1) / 2));
-    const b = Math.min(2020, a + w - 1);
+    const b = Math.min(2026, a + w - 1);
     st.range = [a, b];
     yearLabel.textContent = w === 1 ? String(Math.round(st.year)) : a + "–" + b;
   }
@@ -828,7 +829,7 @@
     setEpoch(null, true); syncSlider(); draw();
   });
   allYears.addEventListener("change", () => {
-    if (allYears.checked) { st.range = null; yearLabel.textContent = "1800–2020"; }
+    if (allYears.checked) { st.range = null; yearLabel.textContent = "1800–2026"; }
     else applyYearWindow();
     setEpoch(null, true); draw();
   });
@@ -844,15 +845,15 @@
     if (playing) { playing = 0; playBtn.textContent = "▶"; return; }
     playBtn.textContent = "❚❚";
     setEpoch(null, true); allYears.checked = false;
-    if (st.year >= 2019) st.year = 1800;
+    if (st.year >= 2025) st.year = 1800;
     playing = 1;
     const step = () => {
       if (!playing) return;
-      st.year = Math.min(2020, st.year + (reduced ? 2 : 0.55));
+      st.year = Math.min(2026, st.year + (reduced ? 2 : 0.55));
       applyYearWindow();
       yearInput.value = String(Math.round(st.year));
       syncSlider(); paint();
-      if (st.year < 2020) requestAnimationFrame(step);
+      if (st.year < 2026) requestAnimationFrame(step);
       else { playing = 0; playBtn.textContent = "▶"; }
     };
     requestAnimationFrame(step);
@@ -875,7 +876,7 @@
     if (i == null) {
       epanel.classList.remove("open");
       if (!keepRange) {
-        st.range = null; allYears.checked = true; yearLabel.textContent = "1800–2020";
+        st.range = null; allYears.checked = true; yearLabel.textContent = "1800–2026";
         flyTo(1, 0, 0, 500);
       }
       return;
@@ -887,10 +888,13 @@
   }
   function zoomToEpoch(ep) {
     if (st.layout !== 0) { flyTo(1, 0, 0, 400); return; }
-    const w1 = PAD + (ep.from - 1780) / 240 * (W - 2 * PAD);
-    const w2 = PAD + (ep.to - 1780) / 240 * (W - 2 * PAD);
-    const k = Math.max(0.9, Math.min(0.92 * W / (w2 - w1), 1.35 * H / (H - TOP - BOT)));
-    flyTo(k, W / 2 - (w1 + w2) / 2 * k, H / 2 - (TOP + 0.5 * (H - TOP - BOT)) * k, 550);
+    // летим на bounding box видимых узлов: в хронологии человек стоит по рождению,
+    // а не по годам эпохи — полоса поздних эпох сама по себе почти пуста
+    let x1 = Infinity, x2 = -Infinity;
+    for (const n of nodes) if (nodeOn(n)) { const x = wx(n); if (x < x1) x1 = x; if (x > x2) x2 = x; }
+    if (!(x2 > x1)) { flyTo(1, 0, 0, 400); return; }
+    const k = Math.max(0.9, Math.min(0.9 * W / (x2 - x1), 1.35 * H / (H - TOP - BOT)));
+    flyTo(k, W / 2 - (x1 + x2) / 2 * k, H / 2 - (TOP + 0.5 * (H - TOP - BOT)) * k, 550);
   }
   function renderEpanel(ep) {
     const inEp = nodes.filter(nodeOn);
